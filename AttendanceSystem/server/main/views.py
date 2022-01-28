@@ -4,7 +4,7 @@ import json
 from.models import *
 from django.core.serializers import serialize
 from datetime import datetime
-import base64
+from django.core.paginator import Paginator
 
 # Create your views here.
 def attendance(request):
@@ -37,15 +37,33 @@ def attendance(request):
 '''
 
 def timelist(request):
+    cli_request = json.loads(request.body)
+    try:
+        pageinfo = cli_request['pageinfo']
+        print(pageinfo)
+    except Exception:
+        print("argument error")
+
+    # 创建分页器
+
     records = []
-    if Record.objects.count()>0:
+    total = Record.objects.count()
+    if total > 0:
         datas = Record.objects.all().order_by('-item_date')
+        paginator = Paginator(datas, pageinfo['pagesize'])
+        # datas = paginator.get_page(pageinfo['currentpage'])
+        datas = []
+        try:
+            datas = paginator.page(pageinfo['currentpage'])
+            print(datas)
+        except Exception as error:
+            print(f"page error:{error}")
 
         for data in datas:
-            record = {"id":data.item_id, "name":data.item_name, "date":data.item_date}
+            record = {"id": data.item_id, "name": data.item_name, "date": data.item_date}
             records.append(record)
 
-    return JsonResponse(records, safe=False)
+    return JsonResponse({"timeList":records, "total":total}, safe=False)
 
 
 
